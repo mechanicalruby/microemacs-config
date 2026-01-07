@@ -1,0 +1,159 @@
+;; -- Beginning of robbie's user config --
+
+;; this is configured for windows, i'll work on my linux config later.
+;; problems to fix:
+;; - [X] change font
+;; - [X] set custom color theme (i actually like the default so whatever)
+;; - [X] isearch is case sensitive.
+;;     - okay, in the docs it says this is controlled with "exact" mode. idk how to set it
+;;     - they put the simple/case-insensitive code as an example in global-mode(2), awesome!
+;; - [ ] there's no global file/directory bookmark list ?
+;; - [ ] typing with a mark set should delete region
+;; - [x] ! keybind - project build command
+;; - [X] ! keybind - project launch command
+;; - [ ] ! keybind - `A-;` toggles comments on region
+;; - [X] ! shortcut - win explorer launch in buffer dir
+;; - [X] ! shortcut - alacritty launch in buffer dir
+;; - [X] ! keybind  - copy region to `M-w`, why is it `esc w`
+;; - [ ] copy region should unmark region
+;; - [ ] copy region duplicates on paste? (could be my keyboard having key repeat issues)
+
+;; Launch default buffers (projects, config)
+find-file "C:\\Users\\robbi\\AppData\\Roaming\\jasspa\\robbi\\"
+find-file "C:\\Users\\robbi\\Desktop\\Projects\\JS\\blog\\"
+find-file "C:\\Users\\robbi\\Desktop\\sokopoko story ideas\\"
+find-file "C:\\Users\\robbi\\Desktop\\Projects\\C\\Sokopoko\\"
+
+;; Set font (MS Windows requires a bunch of weird flags)
+;; (default is 9 [bit 1 and 8], so only set 1 because 8 prompts for font select)
+0x01 change-font [0 "Hack" 0 0 14]
+
+;; Automatically launch the toolbar
+;; 1 toolbar
+
+;; Set color scheme
+change-scheme "Basic White on Black"
+
+;; !! Configure variables
+set-variable $kept-versions 0
+set-variable $tab-width 4
+set-variable $indent-width 4
+set-variable $file-ignore "~ .o ./" ;; ignore in find
+
+;; !! Configure mode
+-1 global-mode "exact" ;; Disable search case-sensitivity
+-1 global-mode "magic"
+-1 global-mode "cr" ;; LF over CRLF.
+-1 global-mode "backup" ;; File backups!
+
+;; !! Define macros
+;; Open explorer in buffer directory
+define-macro open-explorer-here
+    ;; Get full file path of current buffer
+    set-variable #l0 $buffer-fname
+    ;; Erase filename at the end to retrieve containing directory
+    set-variable #l0 &xrep #l0 "[^\/]+$" ""
+    ;; Convert UNIX path (MicroEmacs) to Windows path (skip on Linux!)
+    set-variable #l0 &rep #l0 "/" "\\"
+    
+    ;; Open with explorer.exe
+    shell-command &cat "explorer.exe " #l0
+!emacro
+
+;; Open in-editor file browser at buffer directory
+define-macro open-dired-here
+    set-variable #l0 $buffer-fname
+    set-variable #l0 &xrep #l0 "[^\/]+$" ""
+    set-variable #l0 &rep #l0 "/" "\\" ;; comment out on Linux!
+    
+    find-file #l0
+!emacro
+
+;; Open terminal in buffer directory
+define-macro open-terminal-here
+    set-variable #l0 $buffer-fname
+    set-variable #l0 &xrep #l0 "[^\/]+$" ""
+    set-variable #l0 &rep #l0 "/" "\\" ;; comment out on Linux!
+    
+    shell-command &cat "alacritty.exe --working-directory " #l0
+!emacro
+  
+define-macro reload-buffer
+    find-file $buffer-fname
+!emacro
+
+;; Swap between source and header file if possible
+define-macro swap-source-header-buffer
+    set-variable #l0 $buffer-fname ;; full buffer name
+    
+    ;; C
+    !if &xis #l0 ".*\\.c"
+        set-variable #l1 &xrep #l0 "\.c$" ".h"
+        0x01 find-file #l1
+        !abort
+    !endif
+    
+    !if &xis #l0 ".*\\.h"
+        set-variable #l1 &xrep #l0 "\.h$" ".c"
+        0x01 find-file #l1
+        !abort
+    !endif
+    
+    ;; C++
+    !if &xis #l0 ".*\\.cpp"
+        set-variable #l1 &xrep #l0 "\.cpp$" ".hpp"
+        0x01 find-file #l1
+        !abort
+    !endif
+    
+    !if &xis #l0 ".*\\.hpp"
+        set-variable #l1 &xrep #l0 "\.hpp$" ".cpp"
+        0x01 find-file #l1
+        !abort
+    !endif
+    
+    ml-write "Not a C/C++ source or header file!"
+!emacro
+  
+define-macro build-sokopoko
+    compile "C:\\Users\\robbi\\Desktop\\Projects\\C\\Sokopoko\\debug_build.bat"
+    ;; delete-window
+    ;; find-buffer "*compile*"
+!emacro
+
+define-macro run-sokopoko
+    ;; shell-command "alacritty.exe --working-directory \"C:\\Users\\robbi\\Desktop\\Projects\\C\\Sokopoko\" -e \"powershell -command \"build\\Debug\\Sokopoko.exe\""
+    compile "cd C:\\Users\\robbi\\Desktop\\Projects\\C\\Sokopoko\ && build\\Debug\\Sokopoko.exe"
+    ;; delete-window
+    ;; find-buffer "*compile*"
+!emacro
+
+;; !! Bind all keys
+global-bind-key replace-string "A-C-%"
+global-bind-key change-window-width "C-c k"
+global-bind-key toolbar "C-c t"
+;; Convenience binds
+global-bind-key open-dired-here "C-x d"
+global-bind-key open-explorer-here "C-c e"
+global-bind-key open-terminal-here "C-c m"
+global-bind-key swap-source-header-buffer "C-x j"
+global-bind-key reload-buffer  "C-c r"
+;; Project binds
+global-bind-key build-sokopoko "C-c p"
+global-bind-key run-sokopoko  "C-c o"
+
+;; !! Define hooks
+define-macro fhook-text
+  1 buffer-mode "indent"
+  1 buffer-mode "wrap" ;; wrap baby wrap
+  -1 buffer-mode "justify" ;; stop justifying my text
+!emacro
+
+define-macro fhook-css
+  ml-write "Oh. It's a CSS file."
+!emacro
+
+;; !! Bind all hooks
+add-file-hook ".txt" "fhook-text"
+add-file-hook ".md" "fhook-text" ;; thanks emacs for the template, not so much for justify
+add-file-hook ".css" "fhook-css"
