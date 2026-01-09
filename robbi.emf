@@ -79,7 +79,7 @@ define-macro open-terminal-here
 !emacro
   
 define-macro reload-buffer
-    find-file $buffer-fname
+    reread-file
 !emacro
 
 ;; Swap between source and header file if possible
