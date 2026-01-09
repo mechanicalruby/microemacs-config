@@ -129,6 +129,7 @@ define-macro run-sokopoko
 !emacro
 
 ;; !! Bind all keys
+global-bind-key copy-region "A-w"
 global-bind-key replace-string "A-C-%"
 global-bind-key change-window-width "C-c k"
 global-bind-key toolbar "C-c t"
